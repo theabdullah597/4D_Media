@@ -13,9 +13,6 @@ function Navbar() {
     const location = useLocation();
     const { user, logout } = useAuth();
 
-    // Hide navbar on admin login page
-    if (location.pathname.toLowerCase() === '/admin/login') return null;
-
     const isAdmin = location.pathname.toLowerCase().startsWith('/admin');
     const adminToken = localStorage.getItem('adminToken');
 
@@ -47,6 +44,9 @@ function Navbar() {
         { path: '/about', label: 'About' },
         { path: '/contact', label: 'Contact' },
     ];
+
+    // Hide navbar on admin login page
+    if (location.pathname.toLowerCase() === '/admin/login') return null;
 
     return (
         <motion.nav

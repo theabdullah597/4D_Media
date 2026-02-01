@@ -12,6 +12,41 @@ const safeJsonParse = (str) => {
     }
 };
 
+const getImageUrl = (path) => {
+    if (!path) return '';
+
+    // 1. Handle base64
+    if (path.startsWith('data:')) return path;
+
+    // 2. Handle existing HTTP URLs
+    if (path.startsWith('http')) {
+        try {
+            const url = new URL(path);
+            // If it's a local upload (localhost:5173 or similar) pointing to /uploads
+            if (url.pathname.startsWith('/uploads')) {
+                // Strip domain, we will rebuild it
+                path = url.pathname;
+            } else {
+                // External URL or valid absolute URL we don't want to touch
+                return path;
+            }
+        } catch (e) {
+            return path;
+        }
+    }
+
+    // 3. Construct absolute Backend URL
+    const baseUrl = import.meta.env.VITE_API_URL
+        ? import.meta.env.VITE_API_URL.replace('/api', '')
+        : 'http://localhost:5000';
+
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+    // Final check to avoid double slashes if baseUrl ends with /
+    const finalBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return `${finalBase}${cleanPath}`;
+};
+
 const AdminOrderDetails = ({ order, onClose, onUpdateStatus }) => {
     if (!order) return null;
 
@@ -130,7 +165,7 @@ const AdminOrderDetails = ({ order, onClose, onUpdateStatus }) => {
                                                     {item.designElements.filter(el => el.element_type === 'image').map((el, i) => (
                                                         <a
                                                             key={`img-${i}`}
-                                                            href={el.content}
+                                                            href={getImageUrl(el.content)}
                                                             download={`asset-${order.order_number}-${i + 1}.png`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
@@ -141,7 +176,7 @@ const AdminOrderDetails = ({ order, onClose, onUpdateStatus }) => {
                                                                 <span className="truncate max-w-[80px] font-bold">{el.view_name || `Asset ${i + 1}`}</span>
                                                             </div>
                                                             <div className="h-10 w-full flex items-center justify-center bg-black/20 rounded">
-                                                                <img src={el.content} className="max-h-full max-w-full object-contain" alt="Asset" onError={(e) => e.target.style.display = 'none'} />
+                                                                <img src={getImageUrl(el.content)} className="max-h-full max-w-full object-contain" alt="Asset" onError={(e) => e.target.style.display = 'none'} />
                                                             </div>
                                                         </a>
                                                     ))}

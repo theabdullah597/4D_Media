@@ -445,9 +445,10 @@ router.get('/products', authenticateAdmin, async (req, res) => {
       ORDER BY p.created_at DESC
     `);
 
-        // Get variants for each product
+        // Get variants and views for each product
         for (const product of products) {
             product.variants = await db.all('SELECT * FROM product_variants WHERE product_id = ?', [product.id]);
+            product.views = await db.all('SELECT * FROM product_views WHERE product_id = ? ORDER BY is_default DESC', [product.id]);
         }
 
         res.json({
@@ -457,9 +458,10 @@ router.get('/products', authenticateAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Error fetching products:', error);
+        require('fs').writeFileSync('backend_error.log', String(error) + '\n' + error.stack);
         res.status(500).json({
             success: false,
-            message: 'Error fetching products'
+            message: 'Error fetching products: ' + error.message
         });
     }
 });

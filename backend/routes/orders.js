@@ -16,6 +16,11 @@ const UK_POSTCODE_REGEX = /^[A-Za-z0-9][A-Za-z0-9\s]{2,8}[A-Za-z0-9]$/;
  */
 router.post('/', authUser, upload.fields([{ name: 'designImages', maxCount: 20 }, { name: 'previewImage', maxCount: 1 }]), handleUploadError, async (req, res) => {
     try {
+        console.log('--- NEW ORDER REQUEST ---');
+        console.log('Headers Content-Type:', req.headers['content-type']);
+        console.log('req.files:', req.files);
+        console.log('req.body keys:', Object.keys(req.body));
+
         const {
             customerName,
             customerEmail,
@@ -82,9 +87,10 @@ router.post('/', authUser, upload.fields([{ name: 'designImages', maxCount: 20 }
 
             const orderId = orderResult.id;
 
-            // Handle Files
-            const uploadedDesignFiles = req.files['designImages'] || [];
-            const previewFile = req.files['previewImage'] ? req.files['previewImage'][0] : null;
+            // Handle Files (Safe Access)
+            const files = req.files || {};
+            const uploadedDesignFiles = files['designImages'] || [];
+            const previewFile = files['previewImage'] ? files['previewImage'][0] : null;
 
             const uploadedImageUrls = uploadedDesignFiles.map(f => `${config.frontendUrl}/uploads/${f.filename}`);
             if (previewFile) {

@@ -351,6 +351,7 @@ export default function Customize() {
                             </button>
                         ))}
                     </div>
+
                 </div>
 
                 <div className="flex items-center gap-3">

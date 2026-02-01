@@ -19,6 +19,7 @@
   "author": "4D Media",
   "license": "ISC",
   "dependencies": {
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "sqlite3": "^5.1.7"
   }
 }

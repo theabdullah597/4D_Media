@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { AuthProvider } from './context/AuthContext';
@@ -46,9 +47,21 @@ function App() {
 
                             {/* Admin Routes */}
                             <Route path="/admin/login" element={<AdminLogin />} />
-                            <Route path="/admin" element={<AdminDashboard />} />
-                            <Route path="/admin/products" element={<AdminProducts />} />
-                            <Route path="/admin/orders" element={<AdminOrders />} />
+                            <Route path="/admin" element={
+                                <ProtectedRoute>
+                                    <AdminDashboard />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin/products" element={
+                                <ProtectedRoute>
+                                    <AdminProducts />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin/orders" element={
+                                <ProtectedRoute>
+                                    <AdminOrders />
+                                </ProtectedRoute>
+                            } />
                         </Routes>
                     </main>
                     <Footer />

@@ -2,6 +2,33 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
+const getImageUrl = (url) => {
+    if (!url) return 'https://placehold.co/300x300?text=No+Image';
+
+    if (url.startsWith('data:')) return url;
+
+    if (url.startsWith('http')) {
+        try {
+            const urlObj = new URL(url);
+            if (urlObj.pathname.startsWith('/uploads')) {
+                url = urlObj.pathname;
+            } else {
+                return url;
+            }
+        } catch (e) {
+            return url;
+        }
+    }
+
+    const baseUrl = import.meta.env.VITE_API_URL
+        ? import.meta.env.VITE_API_URL.replace('/api', '')
+        : 'http://localhost:5000';
+
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    const finalBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return `${finalBase}${cleanPath}`;
+};
+
 function ProductCard({ product }) {
     return (
         <Link to={`/customize/${product.id}`} className="block h-full group">
@@ -19,7 +46,7 @@ function ProductCard({ product }) {
                             <ProductCarousel views={product.views} defaultImage={product.image_url} />
                         ) : (
                             <img
-                                src={product.image_url}
+                                src={getImageUrl(product.image_url)}
                                 alt={product.name}
                                 className="w-full h-full object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
                             />
@@ -74,18 +101,24 @@ function ProductCarousel({ views, defaultImage }) {
             onMouseLeave={() => setActiveIndex(0)}
         >
             <img
-                src={images[activeIndex]?.image_url || defaultImage}
+                src={getImageUrl(images[activeIndex]?.image_url || defaultImage)}
                 alt="Product View"
                 className="w-full h-full object-contain drop-shadow-2xl transition-all duration-500"
             />
 
             {/* Carousel Dots */}
             {images.length > 1 && (
-                <div className="absolute bottom-2 flex gap-1 z-20">
+                <div className="absolute bottom-2 flex gap-1 z-20" onClick={(e) => e.stopPropagation() /* Prevent navigation when clicking dots */}>
                     {images.map((_, idx) => (
-                        <div
+                        <button
                             key={idx}
-                            className={`w-1.5 h-1.5 rounded-full transition-all ${idx === activeIndex ? 'bg-primary w-3' : 'bg-gray-500'}`}
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveIndex(idx);
+                            }}
+                            className={`w-2 h-2 rounded-full transition-all border border-black/20 ${idx === activeIndex ? 'bg-primary w-4' : 'bg-white/50 hover:bg-white'}`}
                         />
                     ))}
                 </div>

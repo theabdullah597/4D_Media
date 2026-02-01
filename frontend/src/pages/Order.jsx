@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, ShoppingBag, Truck, CreditCard, ChevronLeft, MapPin, Phone, Mail, User } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { ordersAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { getTempOrder, clearTempOrder } from '../utils/db';

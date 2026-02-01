@@ -89,13 +89,14 @@ async function startServer() {
         console.log('Database ready');
 
         app.listen(config.port, () => {
-            console.log(`\n🚀 4D Media Server running on port ${config.port}`);
-            console.log(`📌 Environment: ${config.nodeEnv}`);
-            console.log(`🌐 API: http://localhost:${config.port}/api`);
+            console.log(`\n 4D Media Server running on port ${config.port}`);
+            console.log(` Environment: ${config.nodeEnv}`);
+            console.log(` API: http://localhost:${config.port}/api`);
+            console.log(` Max Upload: ${config.maxFileSize / 1024 / 1024}MB`);
             if (config.nodeEnv === 'development') {
-                console.log(`🎨 Frontend: ${config.frontendUrl}`);
+                console.log(` Frontend: ${config.frontendUrl}`);
             }
-            console.log('\n✅ Server ready to accept requests\n');
+            console.log('\nServer ready to accept requests\n');
         });
     } catch (error) {
         console.error('Failed to start server:', error);

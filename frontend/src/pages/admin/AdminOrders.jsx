@@ -163,6 +163,7 @@ function AdminOrders() {
                                     <thead className="bg-[#0f172a]/50 text-xs text-gray-400 uppercase font-medium">
                                         <tr>
                                             <th className="px-6 py-4 text-left whitespace-nowrap">Order #</th>
+                                            <th className="px-6 py-4 text-left whitespace-nowrap">Date</th>
                                             <th className="px-6 py-4 text-left whitespace-nowrap">Customer</th>
                                             <th className="px-6 py-4 text-left whitespace-nowrap">Items</th>
                                             <th className="px-6 py-4 text-left whitespace-nowrap">Total</th>
@@ -174,11 +175,18 @@ function AdminOrders() {
                                         {filteredOrders.map(order => (
                                             <tr key={order.id} className="hover:bg-white/5 transition-colors group">
                                                 <td className="px-6 py-4 font-mono text-primary whitespace-nowrap">{order.order_number}</td>
+                                                <td className="px-6 py-4 text-gray-400 text-xs whitespace-nowrap">
+                                                    {new Date(order.created_at).toLocaleDateString()}
+                                                    <br />
+                                                    <span className="text-gray-500">{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <div className="text-white font-medium whitespace-nowrap">{order.customer_name}</div>
                                                     <div className="text-xs text-gray-500 whitespace-nowrap">{order.customer_email}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-gray-400 whitespace-nowrap">{order.items?.length || 0}</td>
+                                                <td className="px-6 py-4 text-gray-400 whitespace-nowrap">
+                                                    {order.items?.reduce((acc, item) => acc + (item.quantity || 1), 0) || 0}
+                                                </td>
                                                 <td className="px-6 py-4 font-bold text-white whitespace-nowrap">£{parseFloat(order.total_amount).toFixed(2)}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${order.status === 'completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' :

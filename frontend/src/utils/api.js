@@ -3,11 +3,9 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance
+// Create axios instance
 const api = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json'
-    }
+    baseURL: API_BASE_URL
 });
 
 // Add auth token to requests if available
@@ -42,9 +40,7 @@ export const productsAPI = {
 };
 
 export const ordersAPI = {
-    create: (formData) => api.post('/orders', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }),
+    create: (formData) => api.post('/orders', formData),
     getWhatsAppLink: (orderId) => api.post(`/orders/${orderId}/whatsapp`)
 };
 
@@ -65,12 +61,8 @@ export const adminAPI = {
 
     // Products
     getProducts: () => api.get('/admin/products'),
-    addProduct: (product) => api.post('/admin/products', product, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }),
-    updateProduct: (id, product) => api.put(`/admin/products/${id}`, product, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }),
+    addProduct: (product) => api.post('/admin/products', product),
+    updateProduct: (id, product) => api.put(`/admin/products/${id}`, product),
     deleteProduct: (id) => api.delete(`/admin/products/${id}`),
 
     // Analytics

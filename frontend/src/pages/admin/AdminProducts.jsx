@@ -241,8 +241,29 @@ function AdminProducts() {
     // Image URL Helper
     const getImageUrl = (url) => {
         if (!url) return 'https://placehold.co/300x300?text=No+Image';
-        if (url.startsWith('http')) return url;
-        return url;
+
+        if (url.startsWith('data:')) return url;
+
+        if (url.startsWith('http')) {
+            try {
+                const urlObj = new URL(url);
+                if (urlObj.pathname.startsWith('/uploads')) {
+                    url = urlObj.pathname;
+                } else {
+                    return url;
+                }
+            } catch (e) {
+                return url;
+            }
+        }
+
+        const baseUrl = import.meta.env.VITE_API_URL
+            ? import.meta.env.VITE_API_URL.replace('/api', '')
+            : 'http://localhost:5000';
+
+        const cleanPath = url.startsWith('/') ? url : `/${url}`;
+        const finalBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        return `${finalBase}${cleanPath}`;
     };
 
     return (
@@ -308,9 +329,18 @@ function AdminProducts() {
                                     {product.is_active ? 'ACTIVE' : 'INACTIVE'}
                                 </div>
                                 {/* Debug Info */}
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-[10px] text-white p-1 truncate">
-                                    {product.image_url || 'No URL'}
-                                </div>
+                                {product.image_url || 'No URL'}
+
+                                {/* Views Overlay */}
+                                {product.views && product.views.length > 1 && (
+                                    <div className="absolute bottom-2 left-2 right-2 flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+                                        {product.views.map(v => (
+                                            <div key={v.id} className="w-8 h-8 flex-shrink-0 rounded-md overflow-hidden border border-white/20 bg-black/50" title={v.view_name}>
+                                                <img src={getImageUrl(v.image_url)} className="w-full h-full object-cover" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mb-4 flex-1">
@@ -343,180 +373,183 @@ function AdminProducts() {
                 </div>
             )}
 
+
             {/* Add/Edit Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-[#1e293b] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-                        <div className="flex justify-between items-center p-6 border-b border-white/10 sticky top-0 bg-[#1e293b] z-10">
-                            <h2 className="text-xl font-bold text-white">
-                                {editingProduct ? 'Edit Product' : 'Add New Product'}
-                            </h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white transition-colors">
-                                <X size={24} />
-                            </button>
-                        </div>
+            {
+                showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div className="bg-[#1e293b] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                            <div className="flex justify-between items-center p-6 border-b border-white/10 sticky top-0 bg-[#1e293b] z-10">
+                                <h2 className="text-xl font-bold text-white">
+                                    {editingProduct ? 'Edit Product' : 'Add New Product'}
+                                </h2>
+                                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white transition-colors">
+                                    <X size={24} />
+                                </button>
+                            </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Product Name</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-all"
-                                        placeholder="e.g. Premium Cotton T-Shirt"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
-                                    <select
-                                        required
-                                        value={formData.categoryId}
-                                        onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
-                                        className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-all appearance-none"
-                                    >
-                                        <option value="">Select Category</option>
-                                        {categories.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Base Price (£)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">£</span>
+                            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Product Name</label>
                                         <input
                                             required
-                                            type="number"
-                                            step="0.01"
-                                            value={formData.basePrice}
-                                            onChange={e => setFormData({ ...formData, basePrice: e.target.value })}
-                                            className="w-full bg-[#0f172a] border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white focus:border-primary outline-none transition-all"
-                                            placeholder="0.00"
+                                            type="text"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-all"
+                                            placeholder="e.g. Premium Cotton T-Shirt"
                                         />
                                     </div>
-                                </div>
 
-                                {/* Multi-View Uploads */}
-                                <div className="md:col-span-2 space-y-4">
-                                    <label className="block text-sm font-medium text-gray-400">Product Views (Images)</label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {views.map(view => (
-                                            <div key={view.id} className="space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="block text-xs uppercase text-gray-500 font-bold">{view.name} View</label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setViews(prev => prev.map(v => v.id === view.id ? { ...v, useUrl: !v.useUrl, file: null, preview: '', urlInput: '' } : v))}
-                                                        className="text-[10px] text-primary hover:underline cursor-pointer"
-                                                    >
-                                                        {view.useUrl ? 'Switch to Upload' : 'Switch to URL'}
-                                                    </button>
-                                                </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                                        <select
+                                            required
+                                            value={formData.categoryId}
+                                            onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
+                                            className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-all appearance-none"
+                                        >
+                                            <option value="">Select Category</option>
+                                            {categories.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                                {view.useUrl ? (
-                                                    <input
-                                                        type="text"
-                                                        placeholder="https://example.com/image.png"
-                                                        value={view.urlInput || ''}
-                                                        onChange={(e) => {
-                                                            const url = e.target.value;
-                                                            setViews(prev => prev.map(v => v.id === view.id ? { ...v, urlInput: url, preview: url } : v));
-                                                        }}
-                                                        className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-primary outline-none"
-                                                    />
-                                                ) : (
-                                                    <div className="relative group">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={(e) => handleViewFileChange(view.id, e)}
-                                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                        />
-                                                        <div className="bg-[#0f172a] border border-white/10 border-dashed rounded-xl h-32 flex flex-col items-center justify-center p-4 group-hover:border-primary transition-colors">
-                                                            {view.preview ? (
-                                                                <div className="relative w-full h-full">
-                                                                    <img src={view.preview} className="w-full h-full object-contain" />
-                                                                    <button
-                                                                        type="button"
-                                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg z-20"
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            if (editingProduct && !view.file && !view.useUrl) {
-                                                                                // This was an existing image from DB
-                                                                                setDeletedViews(prev => [...prev, view.name]);
-                                                                            }
-                                                                            setViews(prev => prev.map(v => v.id === view.id ? { ...v, file: null, preview: '', urlInput: '' } : v));
-                                                                        }}
-                                                                    >
-                                                                        <X size={12} />
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    <ImageIcon className="text-gray-500 mb-2" size={24} />
-                                                                    <span className="text-xs text-gray-400">Click to Upload</span>
-                                                                </>
-                                                            )}
-                                                        </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Base Price (£)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">£</span>
+                                            <input
+                                                required
+                                                type="number"
+                                                step="0.01"
+                                                value={formData.basePrice}
+                                                onChange={e => setFormData({ ...formData, basePrice: e.target.value })}
+                                                className="w-full bg-[#0f172a] border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white focus:border-primary outline-none transition-all"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Multi-View Uploads */}
+                                    <div className="md:col-span-2 space-y-4">
+                                        <label className="block text-sm font-medium text-gray-400">Product Views (Images)</label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {views.map(view => (
+                                                <div key={view.id} className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="block text-xs uppercase text-gray-500 font-bold">{view.name} View</label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setViews(prev => prev.map(v => v.id === view.id ? { ...v, useUrl: !v.useUrl, file: null, preview: '', urlInput: '' } : v))}
+                                                            className="text-[10px] text-primary hover:underline cursor-pointer"
+                                                        >
+                                                            {view.useUrl ? 'Switch to Upload' : 'Switch to URL'}
+                                                        </button>
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))}
+
+                                                    {view.useUrl ? (
+                                                        <input
+                                                            type="text"
+                                                            placeholder="https://example.com/image.png"
+                                                            value={view.urlInput || ''}
+                                                            onChange={(e) => {
+                                                                const url = e.target.value;
+                                                                setViews(prev => prev.map(v => v.id === view.id ? { ...v, urlInput: url, preview: url } : v));
+                                                            }}
+                                                            className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-primary outline-none"
+                                                        />
+                                                    ) : (
+                                                        <div className="relative group">
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleViewFileChange(view.id, e)}
+                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                            />
+                                                            <div className="bg-[#0f172a] border border-white/10 border-dashed rounded-xl h-32 flex flex-col items-center justify-center p-4 group-hover:border-primary transition-colors">
+                                                                {view.preview ? (
+                                                                    <div className="relative w-full h-full">
+                                                                        <img src={view.preview} className="w-full h-full object-contain" />
+                                                                        <button
+                                                                            type="button"
+                                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg z-20"
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                if (editingProduct && !view.file && !view.useUrl) {
+                                                                                    // This was an existing image from DB
+                                                                                    setDeletedViews(prev => [...prev, view.name]);
+                                                                                }
+                                                                                setViews(prev => prev.map(v => v.id === view.id ? { ...v, file: null, preview: '', urlInput: '' } : v));
+                                                                            }}
+                                                                        >
+                                                                            <X size={12} />
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <ImageIcon className="text-gray-500 mb-2" size={24} />
+                                                                        <span className="text-xs text-gray-400">Click to Upload</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-gray-500">Upload PNG/JPG images. 'Front' is required.</p>
                                     </div>
-                                    <p className="text-xs text-gray-500">Upload PNG/JPG images. 'Front' is required.</p>
-                                </div>
 
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
-                                    <textarea
-                                        rows="4"
-                                        value={formData.description}
-                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                        className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-all resize-none"
-                                        placeholder="Product details, material info, etc."
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2">
-                                    <label className="flex items-center gap-3 bg-[#0f172a] border border-white/10 p-4 rounded-xl cursor-pointer hover:border-white/20 transition-all">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.isActive}
-                                            onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
-                                            className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary bg-transparent"
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">Description</label>
+                                        <textarea
+                                            rows="4"
+                                            value={formData.description}
+                                            onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                            className="w-full bg-[#0f172a] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-all resize-none"
+                                            placeholder="Product details, material info, etc."
                                         />
-                                        <span className="text-white font-medium">Active Product</span>
-                                        <span className="text-gray-500 text-sm ml-auto">Visible in store</span>
-                                    </label>
-                                </div>
-                            </div>
+                                    </div>
 
-                            <div className="flex gap-4 pt-4 border-t border-white/10">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="flex-1 bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl transition-all font-medium"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl transition-all font-medium shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                                >
-                                    <Save size={18} />
-                                    <span>{editingProduct ? 'Update Product' : 'Create Product'}</span>
-                                </button>
-                            </div>
-                        </form>
+                                    <div className="md:col-span-2">
+                                        <label className="flex items-center gap-3 bg-[#0f172a] border border-white/10 p-4 rounded-xl cursor-pointer hover:border-white/20 transition-all">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isActive}
+                                                onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
+                                                className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary bg-transparent"
+                                            />
+                                            <span className="text-white font-medium">Active Product</span>
+                                            <span className="text-gray-500 text-sm ml-auto">Visible in store</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4 border-t border-white/10">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="flex-1 bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl transition-all font-medium"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl transition-all font-medium shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                                    >
+                                        <Save size={18} />
+                                        <span>{editingProduct ? 'Update Product' : 'Create Product'}</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 
