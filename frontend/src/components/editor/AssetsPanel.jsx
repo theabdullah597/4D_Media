@@ -1,71 +1,46 @@
 import { useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Shapes, Hexagon, Star, Sparkles } from 'lucide-react';
+import { SHAPES } from '../../utils/shapes';
 
-// Helper to generate CDN URLs for Twemoji
-const getEmojiUrl = (code) => `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/${code}.png`;
-
-const EMOJIS = [
-    { code: '1f600', label: 'Grinning' }, { code: '1f603', label: 'Grinning Big' }, { code: '1f604', label: 'Grinning Eyes' },
-    { code: '1f601', label: 'Beaming' }, { code: '1f606', label: 'Squinting' }, { code: '1f605', label: 'Sweat Smile' },
-    { code: '1f923', label: 'ROFL' }, { code: '1f602', label: 'Tears of Joy' }, { code: '1f642', label: 'Slight Smile' },
-    { code: '1f643', label: 'Upside Down' }, { code: '1f609', label: 'Wink' }, { code: '1f60a', label: 'Blush' },
-    { code: '1f607', label: 'Halo' }, { code: '1f970', label: 'Hearts' }, { code: '1f60d', label: 'Heart Eyes' },
-    { code: '1f929', label: 'Star Eyes' }, { code: '1f618', label: 'Kiss' }, { code: '1f617', label: 'Kissing' },
-    { code: '1f61a', label: 'Kiss Closed' }, { code: '1f619', label: 'Kiss Smile' }, { code: '1f60b', label: 'Yum' },
-    { code: '1f61b', label: 'Tongue' }, { code: '1f61c', label: 'Wink Tongue' }, { code: '1f92a', label: 'Zany' },
-    { code: '1f61d', label: 'Squint Tongue' }, { code: '1f911', label: 'Money' }, { code: '1f917', label: 'Hug' },
-    { code: '1f92d', label: 'Hand Over Mouth' }, { code: '1f92b', label: 'Shush' }, { code: '1f914', label: 'Think' },
-    { code: '1f910', label: 'Zipper' }, { code: '1f928', label: 'Eyebrow' }, { code: '1f610', label: 'Neutral' },
-    { code: '1f611', label: 'Expressionless' }, { code: '1f636', label: 'No Mouth' }, { code: '1f60f', label: 'Smirk' },
-    { code: '1f612', label: 'Unamused' }, { code: '1f644', label: 'Roll Eyes' }, { code: '1f62c', label: 'Grimace' },
-    { code: '1f925', label: 'Lie' }, { code: '1f60c', label: 'Relieved' }, { code: '1f614', label: 'Pensive' },
-    { code: '1f62a', label: 'Sleepy' }, { code: '1f924', label: 'Drool' }, { code: '1f634', label: 'Sleeping' },
-    { code: '1f637', label: 'Mask' }, { code: '1f912', label: 'Thermometer' }, { code: '1f915', label: 'Bandage' },
-    { code: '1f922', label: 'Nauseated' }, { code: '1f92e', label: 'Vomit' }, { code: '1f927', label: 'Sneeze' },
-    { code: '1f975', label: 'Hot' }, { code: '1f976', label: 'Cold' }, { code: '1f974', label: 'Woozy' },
-    { code: '1f635', label: 'Dizzy' }, { code: '1f92f', label: 'Explode' }, { code: '1f920', label: 'Cowboy' },
-    { code: '1f973', label: 'Party' }, { code: '1f60e', label: 'Sunglasses' }, { code: '1f913', label: 'Nerd' },
-    { code: '1f9d0', label: 'Monocle' }, { code: '1f615', label: 'Confused' }, { code: '1f61f', label: 'Worried' },
-    { code: '1f641', label: 'Slight Frown' }, { code: '1f62e', label: 'Open Mouth' }, { code: '1f62f', label: 'Hushed' },
-    { code: '1f632', label: 'Astonished' }, { code: '1f633', label: 'Flushed' }, { code: '1f97a', label: 'Pleading' },
-    { code: '1f626', label: 'Frowning' }, { code: '1f627', label: 'Anguished' }, { code: '1f628', label: 'Fearful' },
-    { code: '1f630', label: 'Cold Sweat' }, { code: '1f625', label: 'Disappointed' }, { code: '1f622', label: 'Cry' },
-    { code: '1f62d', label: 'Sob' }, { code: '1f631', label: 'Scream' }, { code: '1f616', label: 'Confounded' },
-    { code: '1f623', label: 'Persevere' }, { code: '1f61e', label: 'Disappointed' }, { code: '1f613', label: 'Sweat' },
-    { code: '1f629', label: 'Weary' }, { code: '1f62b', label: 'Tired' }, { code: '1f971', label: 'Yawn' },
-    { code: '1f624', label: 'Triumph' }, { code: '1f621', label: 'Rage' }, { code: '1f620', label: 'Angry' },
-    { code: '1f92c', label: 'Cursing' }, { code: '1f608', label: 'Smile Horns' }, { code: '1f47f', label: 'Imp' },
-    { code: '1f480', label: 'Skull' }, { code: '2620', label: 'Skull Crossbones' }, { code: '1f4a9', label: 'Poop' },
-    { code: '1f921', label: 'Clown' }, { code: '1f479', label: 'Ogre' }, { code: '1f47b', label: 'Ghost' },
-    { code: '1f47d', label: 'Alien' }, { code: '1f47e', label: 'Space Invader' }, { code: '1f916', label: 'Robot' },
-    { code: '1f43a', label: 'Wolf' }, { code: '1f981', label: 'Lion' }, { code: '1f42f', label: 'Tiger' },
-    { code: '1f431', label: 'Cat' }, { code: '1f436', label: 'Dog' }, { code: '1f984', label: 'Unicorn' },
-    { code: '2764', label: 'Heart Red' }, { code: '1f9e1', label: 'Heart Orange' }, { code: '1f49b', label: 'Heart Yellow' },
-    { code: '1f49a', label: 'Heart Green' }, { code: '1f499', label: 'Heart Blue' }, { code: '1f49c', label: 'Heart Purple' },
-    { code: '1f525', label: 'Fire' }, { code: '2b50', label: 'Star' }, { code: '1f308', label: 'Rainbow' }
+const ABSRACT_PATHS = [
+    { id: 'a1', viewBox: '0 0 200 200', path: 'M44.7,-76.4C58.9,-69.2,71.8,-59.1,79.6,-46.9C87.4,-34.7,90.1,-20.4,85.8,-8.3C81.5,3.8,70.2,13.7,60.8,22.4C51.4,31.1,43.9,38.6,35.7,46.1C27.5,53.6,18.6,61.1,8.6,63.9C-1.4,66.7,-12.5,64.8,-24.1,60.6C-35.7,56.4,-47.8,49.9,-56.9,40.4C-66,30.9,-72.1,18.4,-73.4,5.4C-74.7,-7.6,-71.2,-21.1,-63.9,-32.8C-56.6,-44.5,-45.5,-54.4,-33.4,-62.7C-21.3,-71,-8.2,-77.7,3.9,-83.8C16,-89.9,32,-96.4,44.7,-76.4Z', label: 'Blob 1' },
+    { id: 'a2', viewBox: '0 0 200 200', path: 'M41.3,-71.8C52.6,-66.2,60.3,-52.3,64.8,-39.2C69.3,-26.1,70.6,-13.7,72.4,0.1C74.2,13.9,76.5,29.1,70.9,41.9C65.3,54.7,51.8,65.1,38.2,69.5C24.6,73.9,10.9,72.3,-3.3,77.9C-17.5,83.5,-32.2,96.3,-45.1,91.8C-58,87.3,-69.1,65.5,-73.7,45.3C-78.3,25.1,-76.4,6.5,-71.2,-9.9C-66,-26.3,-57.5,-40.5,-46.8,-49.2C-36.1,-57.9,-23.2,-61.1,-10.8,-63.2C1.6,-65.3,13.2,-66.3,24.8,-67.3', label: 'Blob 2' },
+    { id: 'a3', viewBox: '0 0 200 200', path: 'M 100 100 L 150 50 L 200 100 L 150 150 Z', label: 'Diamond' }, // Placeholder for complex abstract, key is simplicity
+    { id: 'a4', viewBox: '0 0 24 24', path: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5', label: 'Layers' },
+    { id: 'a5', viewBox: '0 0 100 100', path: 'M10,50 Q50,10 90,50 Q50,90 10,50', label: 'Leaf' }
 ];
 
-// Mock Assets Data
-const ASSETS = {
-    icons: [
-        { id: 'i1', src: 'https://cdn-icons-png.flaticon.com/512/25/25231.png', label: 'GitHub' },
-        { id: 'i2', src: 'https://cdn-icons-png.flaticon.com/512/61/61109.png', label: 'LinkedIn' },
-        ...EMOJIS.map((e, i) => ({ id: `e${i}`, src: getEmojiUrl(e.code), label: e.label }))
-    ],
-    patterns: [
-        { id: 'p1', src: 'https://img.freepik.com/free-vector/seamless-gold-rhombus-grid-pattern-black-background_53876-97589.jpg', label: 'Geo' },
-        { id: 'p2', src: 'https://img.freepik.com/free-vector/colorful-memphis-pattern-background-vector_53876-156094.jpg', label: 'Memphis' },
-        { id: 'p3', src: 'https://img.freepik.com/free-vector/organic-flat-abstract-shapes-pattern-design_23-2148924843.jpg?w=740', label: 'Organic' }
-    ]
-};
+const BADGE_PATHS = [
+    { id: 'b1', viewBox: '0 0 100 100', path: 'M50 0 L100 25 L100 75 L50 100 L0 75 L0 25 Z', label: 'Hexagon Badge' },
+    { id: 'b2', viewBox: '0 0 100 100', path: 'M50 0 L85 15 L100 50 L85 85 L50 100 L15 85 L0 50 L15 15 Z', label: 'Octagon' },
+    { id: 'b3', viewBox: '0 0 100 100', path: 'M10 10 H90 V90 H10 Z M20 20 V80 H80 V20 H20', label: 'Frame' },
+    { id: 'b4', viewBox: '0 0 24 24', path: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', label: 'Star Badge' },
+    { id: 'b5', viewBox: '0 0 24 24', path: 'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z', label: 'Lightning' }
+];
+
+const MINIMAL_PATHS = [
+    { id: 'm1', viewBox: '0 0 24 24', path: 'M12 2L2 22h20L12 2z', label: 'Triangle' },
+    { id: 'm2', viewBox: '0 0 24 24', path: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z', label: 'Heart' },
+    { id: 'm3', viewBox: '0 0 24 24', path: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z', label: 'Star' },
+    { id: 'm4', viewBox: '0 0 24 24', path: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z', label: 'Plus' },
+    { id: 'm5', viewBox: '0 0 24 24', path: 'M21 11H3v2h18v-2z', label: 'Line' }
+];
+
+const CATEGORIES = [
+    { id: 'abstract', label: 'Abstract', icon: <Shapes size={14} />, assets: ABSRACT_PATHS },
+    { id: 'badges', label: 'Badges', icon: <Hexagon size={14} />, assets: BADGE_PATHS },
+    { id: 'minimal', label: 'Minimal', icon: <Sparkles size={14} />, assets: MINIMAL_PATHS },
+    { id: 'shapes', label: 'Basic', icon: <Star size={14} />, assets: SHAPES },
+];
 
 export default function AssetsPanel({ onClose, onSelectAsset }) {
-    const [category, setCategory] = useState('icons');
+    const [selectedCat, setSelectedCat] = useState('abstract');
     const [search, setSearch] = useState('');
 
-    const filteredAssets = ASSETS[category]?.filter(a =>
+    const activeCategory = CATEGORIES.find(c => c.id === selectedCat) || CATEGORIES[0];
+    const filteredAssets = activeCategory.assets.filter(a =>
         a.label.toLowerCase().includes(search.toLowerCase())
-    ) || [];
+    );
 
     return (
         <div className="w-64 bg-[#1e293b] border-r border-white/10 flex flex-col h-full animate-slide-in-left absolute left-20 z-50 shadow-2xl">
@@ -78,28 +53,26 @@ export default function AssetsPanel({ onClose, onSelectAsset }) {
             </div>
 
             {/* Tabs */}
-            <div className="flex p-2 gap-1 bg-black/20 mx-4 mt-4 rounded-lg">
-                <button
-                    onClick={() => setCategory('icons')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${category === 'icons' ? 'bg-primary text-white shadow' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                    Icons
-                </button>
-                <button
-                    onClick={() => setCategory('patterns')}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${category === 'patterns' ? 'bg-primary text-white shadow' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                    Patterns
-                </button>
+            <div className="p-2 grid grid-cols-2 gap-2">
+                {CATEGORIES.map(cat => (
+                    <button
+                        key={cat.id}
+                        onClick={() => setSelectedCat(cat.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${selectedCat === cat.id ? 'bg-primary text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                    >
+                        {cat.icon}
+                        {cat.label}
+                    </button>
+                ))}
             </div>
 
             {/* Search */}
-            <div className="px-4 mt-4 mb-2">
+            <div className="px-4 mb-2">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                     <input
                         type="text"
-                        placeholder={`Search ${category}...`}
+                        placeholder={`Search ${activeCategory.label}...`}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full bg-[#0f172a] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:border-primary outline-none transition-all"
@@ -113,11 +86,22 @@ export default function AssetsPanel({ onClose, onSelectAsset }) {
                     {filteredAssets.map(asset => (
                         <button
                             key={asset.id}
-                            onClick={() => onSelectAsset(asset.src, category === 'patterns' ? 'pattern' : 'image')}
-                            className="aspect-square bg-white/5 hover:bg-white/10 border border-white/5 hover:border-primary/50 rounded-xl p-2 flex flex-col items-center justify-center gap-2 group transition-all"
+                            onClick={() => onSelectAsset({
+                                ...asset,
+                                type: 'shape',
+                                shapeType: 'path',
+                                fill: '#FFFFFF', // Default fill
+                                backgroundColor: '#FFFFFF' // Fallback
+                            }, 'shape')} // Treat everything as a shape now
+                            className="aspect-square bg-white/5 hover:bg-white/10 border border-white/5 hover:border-primary/50 hover:scale-105 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group transition-all"
                         >
-                            <img src={asset.src} className="w-full h-full object-contain drop-shadow" alt={asset.label} />
-                            {/* <span className="text-[10px] text-gray-500 group-hover:text-white">{asset.label}</span> */}
+                            <svg
+                                viewBox={asset.viewBox || "0 0 100 100"}
+                                className="w-full h-full drop-shadow text-white fill-current group-hover:text-primary transition-colors"
+                            >
+                                <path d={asset.path} />
+                            </svg>
+                            <span className="text-[10px] text-gray-500 group-hover:text-white truncate w-full text-center">{asset.label}</span>
                         </button>
                     ))}
                 </div>

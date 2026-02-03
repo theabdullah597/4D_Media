@@ -19,22 +19,7 @@ export default function Toolbar({ onAddText, onUploadImage, onAddShape, onOpenLi
                 label="Text"
                 onClick={onAddText}
             />
-            <div className="w-[1px] h-8 lg:w-10 lg:h-[1px] bg-white/10 my-0 lg:my-2" />
-            <ToolButton
-                icon={<Square size={24} />}
-                label="Square"
-                onClick={() => onAddShape && onAddShape('rect')}
-            />
-            <ToolButton
-                icon={<Circle size={24} />}
-                label="Circle"
-                onClick={() => onAddShape && onAddShape('circle')}
-            />
-            <ToolButton
-                icon={<Hexagon size={24} />} // Using Hexagon as generic polygon/triangle icon
-                label="Triangle"
-                onClick={() => onAddShape && onAddShape('triangle')}
-            />
+            {/* Shape tools moved to Library */}
             {/* Add more tools here */}
         </div>
     );

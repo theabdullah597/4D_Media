@@ -10,7 +10,7 @@ import { saveTempOrder } from '../utils/db';
 // Note: useEditorHistory might need adjustment for multi-view, 
 // for simplicity in this refactor we'll focus on the core multi-view logic.
 import Toolbar from '../components/editor/Toolbar';
-import LayersPanel from '../components/editor/LayersPanel';
+
 import PropertiesPanel from '../components/editor/PropertiesPanel';
 import AssetsPanel from '../components/editor/AssetsPanel';
 import { ChevronLeft, Maximize, ZoomIn, ZoomOut } from 'lucide-react';
@@ -46,6 +46,7 @@ export default function Customize() {
     const [exporting, setExporting] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [activePanel, setActivePanel] = useState(null); // 'assets', 'settings', etc.
+    const [lastAction, setLastAction] = useState('Ready');
 
     const designAreaRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -146,6 +147,9 @@ export default function Customize() {
             id, type: 'text', content: 'Double Click to Edit',
             fontFamily: 'Inter', fontSize: 24, color: '#FFFFFF',
             fontWeight: '600', fontStyle: 'normal', textAlign: 'center',
+            letterSpacing: 0, lineHeight: 1.2, textTransform: 'none',
+            outlineWidth: 0, outlineColor: '#000000',
+            shadowBlur: 0, shadowColor: '#000000', shadowOffsetX: 2, shadowOffsetY: 2,
             width: 250, height: 40,
             transform: 'translate(125px, 200px) rotate(0deg) scale(1, 1)',
             locked: false, hidden: false
@@ -206,29 +210,54 @@ export default function Customize() {
         }
     };
 
-    const handleAddAsset = (src, type) => {
+    const handleAddAsset = (asset, type) => {
         const id = Date.now();
         const maxSize = 200;
 
-        const newElement = {
-            id,
-            type: 'image', // Patterns also treated as images for now
-            src,
-            width: maxSize, height: maxSize,
-            transform: 'translate(150px, 150px) rotate(0deg) scale(1, 1)',
-            opacity: 1, locked: false, hidden: false,
-            source: 'library'
-        };
-        updateCurrentViewElements([...currentElements, newElement]);
+        if (type === 'shape') {
+            // Handle generic path shapes from library
+            const newElement = {
+                id,
+                type: 'shape',
+                shapeType: 'path',
+                path: asset.path,
+                viewBox: asset.viewBox,
+                backgroundColor: asset.fill || '#FFFFFF',
+                width: 100, height: 100,
+                transform: 'translate(200px, 200px) rotate(0deg) scale(1, 1)',
+                locked: false, hidden: false
+            };
+            updateCurrentViewElements([...currentElements, newElement]);
+        } else {
+            // Handle images and patterns
+            const newElement = {
+                id,
+                type: 'image', // Patterns also treated as images for now
+                src: asset,
+                width: maxSize, height: maxSize,
+                transform: 'translate(150px, 150px) rotate(0deg) scale(1, 1)',
+                opacity: 1, locked: false, hidden: false,
+                source: 'library'
+            };
+            updateCurrentViewElements([...currentElements, newElement]);
+        }
         setSelectedId(id);
         setActivePanel(null); // Close panel after selection
     };
 
     const handleUpdateElement = (updatedProps) => {
+        const keys = Object.keys(updatedProps).join(', ');
+        setLastAction(`Updated: ${keys} at ${new Date().toLocaleTimeString()}`);
+
         const newElements = currentElements.map(el =>
             el.id === selectedId ? { ...el, ...updatedProps } : el
         );
         updateCurrentViewElements(newElements);
+    };
+
+    const handleDeleteElement = (id) => {
+        updateCurrentViewElements(currentElements.filter(e => e.id !== id));
+        setSelectedId(null);
     };
 
     // -- Price Calculation --
@@ -236,6 +265,14 @@ export default function Customize() {
         if (!product) return { unitPrice: 0, total: 0, discountPercent: 0, nextTier: null };
 
         let unitPrice = parseFloat(product.base_price);
+
+        // Add Variant Modifiers
+        const sizeVariant = product.sizes?.find(s => s.variant_value === selectedSize);
+        if (sizeVariant) unitPrice += parseFloat(sizeVariant.price_modifier || 0);
+
+        const colorVariant = product.colors?.find(c => c.variant_value === selectedColor);
+        if (colorVariant) unitPrice += parseFloat(colorVariant.price_modifier || 0);
+
         const activeTier = product.price_tiers?.find(t =>
             quantity >= t.min_quantity && (t.max_quantity === null || quantity <= t.max_quantity)
         );
@@ -439,6 +476,11 @@ export default function Customize() {
                                                         <p style={{
                                                             fontFamily: el.fontFamily, fontSize: el.fontSize, color: el.color,
                                                             fontWeight: el.fontWeight, textAlign: el.textAlign,
+                                                            letterSpacing: (el.letterSpacing || 0) + 'px',
+                                                            lineHeight: el.lineHeight || 1.2,
+                                                            textTransform: el.textTransform || 'none',
+                                                            WebkitTextStroke: el.outlineWidth > 0 ? `${el.outlineWidth}px ${el.outlineColor}` : 'none',
+                                                            textShadow: el.shadowBlur > 0 || el.shadowOffsetX > 0 ? `${el.shadowOffsetX || 0}px ${el.shadowOffsetY || 0}px ${el.shadowBlur || 0}px ${el.shadowColor || 'transparent'}` : 'none',
                                                             width: '100%', height: '100%',
                                                             display: 'flex', alignItems: 'center', justifyContent: el.textAlign === 'center' ? 'center' : el.textAlign === 'right' ? 'flex-end' : 'flex-start'
                                                         }}>
@@ -446,7 +488,7 @@ export default function Customize() {
                                                         </p>
                                                     ) : el.type === 'shape' ? (
                                                         <div style={{ width: '100%', height: '100%' }}>
-                                                            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                                            <svg width="100%" height="100%" viewBox={el.viewBox || "0 0 100 100"} preserveAspectRatio="none">
                                                                 {el.shapeType === 'rect' && (
                                                                     <rect x="0" y="0" width="100" height="100" fill={el.backgroundColor || el.fill} />
                                                                 )}
@@ -455,6 +497,9 @@ export default function Customize() {
                                                                 )}
                                                                 {el.shapeType === 'triangle' && (
                                                                     <polygon points="50,0 100,100 0,100" fill={el.backgroundColor || el.fill} />
+                                                                )}
+                                                                {el.shapeType === 'path' && (
+                                                                    <path d={el.path} fill={el.backgroundColor || el.fill} />
                                                                 )}
                                                             </svg>
                                                         </div>
@@ -501,7 +546,7 @@ export default function Customize() {
                 </div>
 
                 {/* Right Sidebar */}
-                <div className="w-full lg:w-80 bg-[#1e293b] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col p-6 gap-6 z-20 overflow-y-auto flex-shrink-0 lg:h-full">
+                <div className="w-full lg:w-80 bg-[#1e293b] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col p-6 gap-6 z-20 overflow-y-auto lg:overflow-hidden flex-shrink-0 lg:h-full">
                     <div>
                         <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Quantity & Pricing</h3>
                         <div className="space-y-4">
@@ -537,38 +582,40 @@ export default function Customize() {
                                 </div>
                             )}
 
+                            {/* Size Selection */}
                             <div>
-                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Variant Selection</h3>
+                                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-4">Size Selection</h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {product.sizes?.map(s => (
-                                        <button
-                                            key={s.id}
-                                            onClick={() => setSelectedSize(s.variant_value)}
-                                            className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-all ${selectedSize === s.variant_value ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'border-white/10 text-gray-500 hover:border-white/20'}`}
-                                        >
-                                            {s.variant_value}
-                                        </button>
-                                    ))}
+                                    {product.sizes?.filter(s => ['S', 'M', 'L', 'Small', 'Medium', 'Large'].includes(s.variant_value)).map(s => {
+                                        const isSelected = selectedSize === s.variant_value;
+                                        return (
+                                            <button
+                                                key={s.id}
+                                                onClick={() => setSelectedSize(s.variant_value)}
+                                                className={`px-4 py-2 rounded-lg text-[10px] font-bold border transition-all ${isSelected ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105' : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/20 hover:text-white'}`}
+                                            >
+                                                {s.variant_value}
+                                                {parseFloat(s.price_modifier) > 0 && <span className="ml-1 opacity-70">+£{parseFloat(s.price_modifier).toFixed(2)}</span>}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar mt-4 bg-white/5 border border-white/10 rounded-xl p-1 shadow-inner min-h-[200px]">
                         <PropertiesPanel
                             element={currentElements.find(el => el.id === selectedId)}
                             onChange={handleUpdateElement}
+                            onDelete={() => handleDeleteElement(selectedId)}
                         />
+                        <div className="text-[10px] text-gray-500 text-center mt-2 border-t border-white/10 pt-2">
+                            Status: {lastAction}
+                        </div>
                     </div>
 
-                    <div className="h-64 bg-black/20 rounded-xl overflow-hidden border border-white/5">
-                        <LayersPanel
-                            elements={currentElements}
-                            selectedId={selectedId}
-                            onSelect={setSelectedId}
-                            onDelete={(id) => updateCurrentViewElements(currentElements.filter(e => e.id !== id))}
-                        />
-                    </div>
+
                 </div>
             </div>
         </div>
