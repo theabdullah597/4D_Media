@@ -6,14 +6,14 @@ module.exports = {
     nodeEnv: process.env.NODE_ENV || 'development',
 
     // Database configuration
-    databasePath: process.env.DATABASE_PATH || '../database/4dmedia.db',
+    databasePath: process.env.DATABASE_PATH || './database/4dmedia.db',
 
     // JWT configuration
     jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     jwtExpiry: process.env.JWT_EXPIRY || '24h',
 
     // File upload configuration
-    uploadDir: process.env.UPLOAD_DIR || '../uploads',
+    uploadDir: process.env.UPLOAD_DIR || './uploads',
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 20 * 1024 * 1024, // 20MB default
     allowedFileTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'],
 

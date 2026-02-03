@@ -1,6 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
+// Global error handling for startup/runtime crashes
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL ERROR (Uncaught Exception):', err);
+    console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL ERROR (Unhandled Rejection):', reason);
+});
 const config = require('./config/config');
 const db = require('./database/db');
 
