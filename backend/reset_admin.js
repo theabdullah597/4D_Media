@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '../database/4dmedia.db');
+const dbPath = path.join(__dirname, 'database/4dmedia.db');
 const db = new sqlite3.Database(dbPath);
 
 const password = 'Admin@123';
