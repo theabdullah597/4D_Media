@@ -8,6 +8,14 @@ module.exports = {
     // Database configuration
     databasePath: process.env.DATABASE_PATH || './database/4dmedia.db',
 
+    // MySQL configuration
+    mysql: {
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASS || '',
+        database: process.env.DB_NAME || 'design_maker_db'
+    },
+
     // JWT configuration
     jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     jwtExpiry: process.env.JWT_EXPIRY || '24h',

@@ -17,19 +17,8 @@ const db = require('./database/db');
 const app = express();
 
 // Middleware
-// Middleware
 app.use(cors({
-    origin: (origin, callback) => {
-        const allowedOrigins = config.frontendUrl.split(',').map(url => url.trim());
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            console.log('Blocked by CORS:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: config.frontendUrl,
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));

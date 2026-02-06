@@ -47,6 +47,58 @@ const getImageUrl = (path) => {
     return `${finalBase}${cleanPath}`;
 };
 
+const generateSvgUrl = (element) => {
+    let svgContent = '';
+    const color = element.color || '#000000';
+
+    if (element.element_type === 'text') {
+        // Estimate text width/height roughly or use a standard box
+        svgContent = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="500" height="200" viewBox="0 0 500 200">
+                <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" 
+                      font-family="${element.font_family || 'Arial'}" 
+                      font-size="60" 
+                      fill="${color}">
+                    ${element.content}
+                </text>
+            </svg>
+        `.trim();
+    } else if (element.element_type === 'shape' || element.element_type === 'icon') {
+        const shape = element.content?.toLowerCase() || 'circle';
+
+        if (shape.includes('circle')) {
+            svgContent = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                    <circle cx="250" cy="250" r="200" fill="${color}" />
+                </svg>
+            `;
+        } else if (shape.includes('rect') || shape.includes('square')) {
+            svgContent = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                    <rect x="50" y="50" width="400" height="400" fill="${color}" />
+                </svg>
+            `;
+        } else if (shape.includes('triangle')) {
+            svgContent = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                    <polygon points="250,50 450,450 50,450" fill="${color}" />
+                </svg>
+            `;
+        } else {
+            // Default to a generic square if unknown
+            svgContent = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                    <rect x="50" y="50" width="400" height="400" fill="${color}" />
+                    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-size="50">${shape}</text>
+                </svg>
+            `;
+        }
+    }
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    return URL.createObjectURL(blob);
+};
+
 const AdminOrderDetails = ({ order, onClose, onUpdateStatus }) => {
     if (!order) return null;
 
@@ -183,10 +235,51 @@ const AdminOrderDetails = ({ order, onClose, onUpdateStatus }) => {
                                                 </div>
 
                                                 {/* Text Elements */}
+                                                {/* Text Elements */}
                                                 {item.designElements.filter(el => el.element_type === 'text').map((el, i) => (
-                                                    <div key={`txt-${i}`} className="bg-white/5 p-2 rounded border border-white/5 text-xs text-gray-300 flex justify-between items-center">
-                                                        <span className="truncate max-w-[150px]" title={el.content}>Ag "<b>{el.content}</b>"</span>
-                                                        <span className="text-[10px] text-gray-500">{el.font_family}</span>
+                                                    <div key={`txt-${i}`} className="bg-white/5 p-2 rounded border border-white/5 text-xs text-gray-300 flex flex-col gap-1">
+                                                        <div className="flex justify-between items-start">
+                                                            <span className="font-medium text-white break-words" title={el.content}>"{el.content}"</span>
+                                                            <div className="flex gap-2">
+                                                                <span className="text-[10px] bg-white/10 px-1.5 rounded text-gray-400">TEXT</span>
+                                                                <a
+                                                                    href={generateSvgUrl(el)}
+                                                                    download={`text-${order.order_number}-${i}.svg`}
+                                                                    className="text-primary hover:text-white"
+                                                                    title="Download as SVG"
+                                                                >
+                                                                    <Download size={14} />
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-between text-[10px] text-gray-500">
+                                                            <span>{el.font_family} • {el.font_size}px</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <div className="w-2 h-2 rounded-full border border-white/20" style={{ backgroundColor: el.color }}></div>
+                                                                <span>{el.color}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                {/* Shape Elements */}
+                                                {item.designElements.filter(el => el.element_type === 'shape' || el.element_type === 'icon').map((el, i) => (
+                                                    <div key={`shp-${i}`} className="bg-white/5 p-2 rounded border border-white/5 text-xs text-gray-300 flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium text-gray-300 capitalize">{el.content || 'Shape'}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-3 h-3 rounded border border-white/20" style={{ backgroundColor: el.color }}></div>
+                                                            <span className="text-[10px] text-gray-500">SHAPE</span>
+                                                            <a
+                                                                href={generateSvgUrl(el)}
+                                                                download={`shape-${order.order_number}-${i}.svg`}
+                                                                className="text-primary hover:text-white ml-2"
+                                                                title="Download as SVG"
+                                                            >
+                                                                <Download size={14} />
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>

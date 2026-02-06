@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, ShoppingBag, User, LogOut, Menu, X, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.jpg';
+import logo from '../assets/favicon.png';
 import ChangePasswordModal from './ChangePasswordModal';
 
 function Navbar() {

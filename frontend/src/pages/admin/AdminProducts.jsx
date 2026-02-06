@@ -62,7 +62,7 @@ function AdminProducts() {
     const handleEdit = async (productSummary) => {
         // Fetch full product details including views
         try {
-            const res = await productsAPI.getById(productSummary.id);
+            const res = await adminAPI.getProductById(productSummary.id);
             const product = res.data.data;
 
             setEditingProduct(product);

@@ -101,12 +101,23 @@ router.put('/change-password', authenticateAdmin, async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await db.run('UPDATE admins SET password = ? WHERE id = ?', [hashedPassword, req.admin.id]);
+        const updateResult = await db.run('UPDATE admins SET password = ? WHERE id = ?', [hashedPassword, req.admin.id]);
 
+        if (updateResult.changes === 0) {
+            console.error(`Password update failed for admin ${req.admin.id}. No rows affected.`);
+            return res.status(500).json({ success: false, message: 'Failed to update password. Please try again.' });
+        }
+
+        console.log(`Password updated for admin ${req.admin.id}`);
         res.json({ success: true, message: 'Password updated successfully' });
 
     } catch (error) {
         console.error('Change password error:', error);
+        // Log to file
+        const fs = require('fs');
+        const logMessage = `[${new Date().toISOString()}] Password Change Error: ${error.message}\nStack: ${error.stack}\n\n`;
+        fs.appendFileSync('backend_error.log', logMessage);
+
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -129,7 +140,7 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
                 totalOrders: totalOrders.count || 0,
                 pendingOrders: pendingOrders.count || 0,
                 completedOrders: completedOrders.count || 0,
-                totalRevenue: totalRevenue.total || 0
+                totalRevenue: parseFloat(totalRevenue.total || 0)
             }
         });
 
@@ -439,11 +450,12 @@ router.get('/orders/export', authenticateAdmin, async (req, res) => {
 router.get('/products', authenticateAdmin, async (req, res) => {
     try {
         const products = await db.all(`
-      SELECT p.*, c.name as category_name
-      FROM products p
-      JOIN categories c ON p.category_id = c.id
-      ORDER BY p.created_at DESC
-    `);
+            SELECT p.*, c.name as category_name,
+            (SELECT image_url FROM product_views WHERE product_id = p.id AND is_default = 1 LIMIT 1) as image_url
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            ORDER BY p.created_at DESC
+        `);
 
         // Get variants and views for each product
         for (const product of products) {
@@ -515,9 +527,9 @@ router.post('/products', authenticateAdmin, upload.any(), handleUploadError, asy
 
             // 2. Insert Product
             const result = await db.run(
-                `INSERT INTO products (category_id, name, slug, description, base_price, image_url)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [categoryId, name, itemSlug, description, basePrice, mainImageUrl]
+                `INSERT INTO products (category_id, name, slug, description, base_price)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [categoryId, name, itemSlug, description, basePrice]
             );
 
             const productId = result.id;
@@ -719,9 +731,17 @@ router.put('/products/:id', authenticateAdmin, upload.any(), handleUploadError, 
             await db.run(
                 `UPDATE products 
                 SET category_id = ?, name = ?, slug = ?, description = ?, 
-                    base_price = ?, image_url = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                    base_price = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?`,
-                [categoryId, name, itemSlug, description, basePrice, mainImageUrl, isActive ? 1 : 0, id]
+                [
+                    categoryId,
+                    name,
+                    itemSlug,
+                    description,
+                    basePrice,
+                    String(isActive) === 'true' || isActive === true || isActive === 1 ? 1 : 0,
+                    id
+                ]
             );
 
             // 2. Handle Deletions
@@ -804,11 +824,9 @@ router.put('/products/:id', authenticateAdmin, upload.any(), handleUploadError, 
                     }
 
                     // If Front view is updated via URL, update main product image
+                    // (No longer needed as we don't store image_url in products table)
                     if (viewName === 'Front') {
-                        await db.run(
-                            'UPDATE products SET image_url = ? WHERE id = ?',
-                            [req.body[key], id]
-                        );
+                        // no-op
                     }
                 }
             }
@@ -829,6 +847,42 @@ router.put('/products/:id', authenticateAdmin, upload.any(), handleUploadError, 
         res.status(500).json({
             message: 'Error updating product: ' + error.message
         });
+    }
+});
+
+/**
+ * GET /api/admin/products/:id
+ * Get single product details (including inactive)
+ */
+router.get('/products/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const product = await db.get(
+            `SELECT p.*, c.name as category_name, c.slug as category_slug
+             FROM products p
+             JOIN categories c ON p.category_id = c.id
+             WHERE p.id = ?`,
+            [id]
+        );
+
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
+
+        // Get views
+        const views = await db.all('SELECT * FROM product_views WHERE product_id = ? ORDER BY is_default DESC', [id]);
+        product.views = views;
+
+        // Get variants
+        const variants = await db.all('SELECT * FROM product_variants WHERE product_id = ?', [id]);
+        product.variants = variants;
+
+        res.json({ success: true, data: product });
+
+    } catch (error) {
+        console.error('Error fetching product details:', error);
+        res.status(500).json({ success: false, message: 'Error fetching product details' });
     }
 });
 
@@ -936,7 +990,7 @@ router.delete('/orders/:id', authenticateAdmin, async (req, res) => {
 router.get('/analytics/revenue', authenticateAdmin, async (req, res) => {
     try {
         const revenueData = await db.all(`
-            SELECT strftime('%Y-%m-%d', created_at) as date, SUM(total_amount) as revenue
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, SUM(total_amount) as revenue
             FROM orders
             WHERE status != 'cancelled'
             GROUP BY date

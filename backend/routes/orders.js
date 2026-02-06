@@ -80,7 +80,7 @@ router.post('/', authUser, upload.fields([{ name: 'designImages', maxCount: 20 }
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     orderNumber, userId, customerName, customerEmail, customerPhone,
-                    deliveryAddress, deliveryCity, deliveryPostcode, orderNotes,
+                    deliveryAddress, deliveryCity || null, deliveryPostcode, orderNotes || null,
                     totalAmount, 'pending'
                 ]
             );
@@ -113,7 +113,7 @@ router.post('/', authUser, upload.fields([{ name: 'designImages', maxCount: 20 }
                         variant_details_json, unit_price, subtotal
                     ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     [
-                        orderId, item.productId, item.productName, item.quantity || 1,
+                        orderId, item.productId, item.productName || 'Custom Product', item.quantity || 1,
                         JSON.stringify(item.variantDetails || {}), item.calculatedUnitPrice, item.calculatedSubtotal
                     ]
                 );
@@ -139,8 +139,8 @@ router.post('/', authUser, upload.fields([{ name: 'designImages', maxCount: 20 }
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                                 [
                                     orderItemId, view.viewId, element.type,
-                                    content, element.fontFamily, element.fontSize, element.color,
-                                    element.x, element.y, element.rotation || 0,
+                                    content || null, element.fontFamily || null, element.fontSize || null, element.color || null,
+                                    element.x || 0, element.y || 0, element.rotation || 0,
                                     element.scaleX || 1, element.scaleY || 1
                                 ]
                             );
@@ -167,6 +167,11 @@ router.post('/', authUser, upload.fields([{ name: 'designImages', maxCount: 20 }
         }
     } catch (error) {
         console.error('Order creation error:', error);
+        // Log to file for debugging
+        const fs = require('fs');
+        const logMessage = `[${new Date().toISOString()}] Order Error: ${error.message}\nStack: ${error.stack}\n\n`;
+        fs.appendFileSync('backend_error.log', logMessage);
+
         res.status(500).json({ success: false, message: 'Internal server error: ' + error.message });
     }
 });
@@ -188,7 +193,7 @@ router.post('/:id/whatsapp', async (req, res) => {
         message += `Customer: ${order.customer_name}\n`;
         message += `Phone: ${order.customer_phone}\n`;
         message += `Delivery: ${order.delivery_address}, ${order.delivery_postcode}\n`;
-        message += `Total: £${order.total_amount.toFixed(2)}\n\n`;
+        message += `Total: £${parseFloat(order.total_amount).toFixed(2)}\n\n`;
         message += `*Items:*\n`;
 
         orderItems.forEach((item, index) => {
@@ -210,6 +215,11 @@ router.post('/:id/whatsapp', async (req, res) => {
         res.json({ success: true, data: { whatsappUrl: `https://wa.me/${config.whatsappNumber}?text=${encodedMessage}` } });
     } catch (error) {
         console.error("WhatsApp Error:", error);
+        // Log to file for debugging
+        const fs = require('fs');
+        const logMessage = `[${new Date().toISOString()}] WhatsApp Error: ${error.message}\nStack: ${error.stack}\n\n`;
+        fs.appendFileSync('backend_error.log', logMessage);
+
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });

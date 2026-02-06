@@ -116,12 +116,23 @@ router.put('/change-password', authUser, async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+        const updateResult = await db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
 
+        if (updateResult.changes === 0) {
+            console.error(`Password update failed for user ${req.user.id}. No rows affected.`);
+            return res.status(500).json({ success: false, message: 'Failed to update password. Please try again.' });
+        }
+
+        console.log(`Password updated for user ${req.user.id}`);
         res.json({ success: true, message: 'Password updated successfully' });
 
     } catch (error) {
         console.error('Change password error:', error);
+        // Log to file
+        const fs = require('fs');
+        const logMessage = `[${new Date().toISOString()}] User Change Password Error: ${error.message}\nStack: ${error.stack}\n\n`;
+        fs.appendFileSync('backend_error.log', logMessage);
+
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -175,15 +186,26 @@ router.post('/reset-password', async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         // Update password only
-        await db.run(
+        const updateResult = await db.run(
             'UPDATE users SET password = ? WHERE id = ?',
             [hashedPassword, user.id]
         );
 
+        if (updateResult.changes === 0) {
+            console.error(`Password reset failed for user ${user.id}. No rows affected.`);
+            return res.status(500).json({ success: false, message: 'Failed to reset password. Please try again.' });
+        }
+
+        console.log(`Password reset for user ${user.id}`);
         res.json({ success: true, message: 'Password reset successful' });
 
     } catch (error) {
         console.error('Reset password error:', error);
+        // Log to file
+        const fs = require('fs');
+        const logMessage = `[${new Date().toISOString()}] User Reset Password Error: ${error.message}\nStack: ${error.stack}\n\n`;
+        fs.appendFileSync('backend_error.log', logMessage);
+
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });

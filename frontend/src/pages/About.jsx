@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Target, Lightbulb, Heart, Zap, Sparkles } from 'lucide-react';
-import logo from '../assets/logo.jpg';
+import logo from '../assets/favicon.png';
 
 function About() {
     return (
